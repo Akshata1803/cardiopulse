@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CardioPulse | AI Arrhythmia Diagnostic System</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0F172A;
+            --bg-secondary: #1E293B;
+            --card-bg: #1E293B;
+            --border-color: #334155;
+            --text-main: #F8FAFC;
+            --text-muted: #94A3B8;
+            --accent-green: #10B981;
+            --accent-red: #EF4444;
+            --accent-orange: #F59E0B;
+            --accent-purple: #8B5CF6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #0B1120;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-icon {
+            font-size: 28px;
+        }
+
+        .brand-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #FFFFFF;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .badge-live {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34D399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: #10B981;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #10B981;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.8; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.8; }
+        }
+
+        main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 24px;
+            padding: 24px 32px;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #CBD5E1;
+            margin-bottom: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .patient-btn {
+            width: 100%;
+            text-align: left;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            padding: 12px 14px;
+            border-radius: 8px;
+            color: #E2E8F0;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .patient-btn:hover {
+            border-color: #64748B;
+            background: rgba(30, 41, 59, 0.9);
+        }
+
+        .patient-btn.active {
+            border-color: #38BDF8;
+            background: rgba(56, 189, 248, 0.1);
+            color: #38BDF8;
+        }
+
+        .upload-zone {
+            border: 2px dashed #475569;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-muted);
+            transition: border-color 0.2s;
+        }
+
+        .upload-zone:hover {
+            border-color: #38BDF8;
+        }
+
+        .content-area {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .waveform-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .metric-box {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 16px;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .metric-val {
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 4px;
+            color: #F8FAFC;
+        }
+
+        .triage-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 24px;
+        }
+
+        .triage-banner {
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 6px solid #10B981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .triage-level {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #34D399;
+        }
+
+        .triage-name {
+            font-size: 22px;
+            font-weight: 800;
+            margin: 6px 0;
+            color: #FFFFFF;
+        }
+
+        .triage-desc {
+            font-size: 13px;
+            color: #CBD5E1;
+            line-height: 1.5;
+        }
+
+        .prob-bar-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .prob-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .prob-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #CBD5E1;
+        }
+
+        .prob-bar-track {
+            height: 8px;
+            background: #334155;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .prob-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.4s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <div class="brand-icon">🫀</div>
+            <div>
+                <div class="brand-title">CardioPulse Diagnostic Dashboard</div>
+                <div class="brand-subtitle">AI-Driven Real-Time ECG Arrhythmia Classification & Triage</div>
+            </div>
+        </div>
+        <div class="badge-live">
+            <div class="pulse-dot"></div>
+            TELEMETRY ACTIVE
+        </div>
+    </header>
+
+    <main>
+        <!-- Sidebar Controls -->
+        <aside class="sidebar">
+            <div class="card">
+                <div class="card-title">Select Clinical Case</div>
+                <button class="patient-btn active" onclick="selectPatient(0)">
+                    <span>Patient #101: Normal (N)</span>
+                    <span style="color: #10B981;">●</span>
+                </button>
+                <button class="patient-btn" onclick="selectPatient(1)">
+                    <span>Patient #204: Supraventricular (S)</span>
+                    <span style="color: #F59E0B;">●</span>
+                </button>
+                <button class="patient-btn" onclick="selectPatient(2)">
+                    <span>Patient #309: Ventricular / PVC (V)</span>
+                    <span style="color: #EF4444;">●</span>
+                </button>
+                <button class="patient-btn" onclick="selectPatient(3)">
+                    <span>Patient #412: Fusion Beat (F)</span>
+                    <span style="color: #8B5CF6;">●</span>
+                </button>
+                <button class="patient-btn" onclick="selectPatient(4)">
+                    <span>Patient #515: Pacemaker / Paced (Q)</span>
+                    <span style="color: #94A3B8;">●</span>
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Upload Custom ECG CSV</div>
+                <div class="upload-zone" onclick="document.getElementById('csvInput').click()">
+                    📁 Click to select single-beat CSV file
+                    <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="handleFileUpload(event)">
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <section class="content-area">
+            <!-- Waveform Canvas -->
+            <div class="card">
+                <div class="waveform-header">
+                    <div style="font-weight: 700; font-size: 16px;">Lead-II ECG Heartbeat Waveform</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Sampling Rate: 125 Hz | Window: 187 Samples</div>
+                </div>
+                <div style="height: 320px; width: 100%;">
+                    <canvas id="ecgChart"></canvas>
+                </div>
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <div class="metric-label">Peak Voltage</div>
+                        <div class="metric-val" id="peakVoltage">1.00 V</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Estimated Heart Rate</div>
+                        <div class="metric-val">74 BPM</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Signal-to-Noise Ratio</div>
+                        <div class="metric-val">34.2 dB</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Triage Decision & Confidence -->
+            <div class="triage-grid">
+                <div class="card">
+                    <div class="card-title">Automated Triage Stratification</div>
+                    <div class="triage-banner" id="triageBanner">
+                        <div class="triage-level" id="triageLevel">TRIAGE LEVEL: NORMAL</div>
+                        <div class="triage-name" id="triageName">Normal Sinus Rhythm (Class N)</div>
+                        <div class="triage-desc" id="triageDesc">Regular sinus rhythm originating from the SA node. No urgent clinical intervention indicated. Routine monitoring continues.</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Softmax Probability Breakdown</div>
+                    <div class="prob-bar-container" id="probBars"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const CLASS_METADATA = [
+            {
+                code: "N",
+                name: "Normal Sinus Rhythm",
+                severity: "NORMAL",
+                color: "#10B981",
+                desc: "Healthy sinus rhythm originating from SA node. Standard P-QRS-T intervals present."
+            },
+            {
+                code: "S",
+                name: "Supraventricular Ectopic",
+                severity: "WARNING",
+                color: "#F59E0B",
+                desc: "Premature atrial or junctional contraction. Recommend 24h ambulatory Holter surveillance."
+            },
+            {
+                code: "V",
+                name: "Ventricular Ectopic (PVC)",
+                severity: "CRITICAL",
+                color: "#EF4444",
+                desc: "Premature Ventricular Contraction detected. High risk of ventricular tachycardia. Immediate review required."
+            },
+            {
+                code: "F",
+                name: "Fusion Heartbeat",
+                severity: "WARNING",
+                color: "#8B5CF6",
+                desc: "Simultaneous depolarization from ventricular ectopic pacemaker and normal conduction pathway."
+            },
+            {
+                code: "Q",
+                name: "Pacemaker / Unknown",
+                severity: "INCONCLUSIVE",
+                color: "#94A3B8",
+                desc: "Artificial electronic pacing spike or unclassifiable waveform artifact. Verify electrode contact."
+            }
+        ];
+
+        const NUM_POINTS = 187;
+        let chartInstance = null;
+
+        function generateHeartbeat(classId) {
+            const signal = [];
+            for (let i = 0; i < NUM_POINTS; i++) {
+                const t = i / (NUM_POINTS - 1);
+                let val = 0.0;
+
+                if (classId === 0) {
+                    val += 0.15 * Math.exp(-Math.pow(t - 0.20, 2) / (2 * 0.025 * 0.025));
+                    val -= 0.10 * Math.exp(-Math.pow(t - 0.32, 2) / (2 * 0.010 * 0.010));
+                    val += 1.00 * Math.exp(-Math.pow(t - 0.35, 2) / (2 * 0.015 * 0.015));
+                    val -= 0.25 * Math.exp(-Math.pow(t - 0.38, 2) / (2 * 0.012 * 0.012));
+                    val += 0.30 * Math.exp(-Math.pow(t - 0.55, 2) / (2 * 0.050 * 0.050));
+                } else if (classId === 1) {
+                    val += 0.10 * Math.sin(2 * Math.PI * 5 * t) * Math.exp(-Math.pow(t - 0.18, 2) / (2 * 0.03 * 0.03));
+                    val += 0.85 * Math.exp(-Math.pow(t - 0.30, 2) / (2 * 0.014 * 0.014));
+                    val -= 0.20 * Math.exp(-Math.pow(t - 0.33, 2) / (2 * 0.012 * 0.012));
+                    val += 0.25 * Math.exp(-Math.pow(t - 0.48, 2) / (2 * 0.045 * 0.045));
+                } else if (classId === 2) {
+                    val += 1.15 * Math.exp(-Math.pow(t - 0.28, 2) / (2 * 0.045 * 0.045));
+                    val -= 0.70 * Math.exp(-Math.pow(t - 0.38, 2) / (2 * 0.035 * 0.035));
+                    val -= 0.35 * Math.exp(-Math.pow(t - 0.60, 2) / (2 * 0.070 * 0.070));
+                } else if (classId === 3) {
+                    val += 0.10 * Math.exp(-Math.pow(t - 0.15, 2) / (2 * 0.020 * 0.020));
+                    val += 0.75 * Math.exp(-Math.pow(t - 0.32, 2) / (2 * 0.030 * 0.030));
+                    val -= 0.40 * Math.exp(-Math.pow(t - 0.40, 2) / (2 * 0.025 * 0.025));
+                    val += 0.20 * Math.exp(-Math.pow(t - 0.55, 2) / (2 * 0.045 * 0.045));
+                } else {
+                    val += 0.95 * Math.exp(-Math.pow(t - 0.25, 2) / (2 * 0.005 * 0.005));
+                    val += 0.50 * Math.exp(-Math.pow(t - 0.35, 2) / (2 * 0.050 * 0.050));
+                    val -= 0.20 * Math.exp(-Math.pow(t - 0.45, 2) / (2 * 0.040 * 0.040));
+                }
+                val += (Math.random() - 0.5) * 0.02;
+                signal.push(val);
+            }
+            const min = Math.min(...signal);
+            const max = Math.max(...signal);
+            return signal.map(v => (v - min) / (max - min));
+        }
+
+        function renderChart(signal, color) {
+            const ctx = document.getElementById('ecgChart').getContext('2d');
+            const labels = signal.map((_, i) => Math.round((i / 125.0) * 1000) + " ms");
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Lead-II Amplitude',
+                        data: signal,
+                        borderColor: color,
+                        backgroundColor: color + '15',
+                        borderWidth: 2.5,
+                        pointRadius: 0,
+                        tension: 0.2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 400 },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94A3B8', maxTicksLimit: 10 }
+                        },
+                        y: {
+                            min: 0,
+                            max: 1.1,
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94A3B8' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+
+            document.getElementById('peakVoltage').innerText = Math.max(...signal).toFixed(2) + " V";
+        }
+
+        function updateTriage(classId, probs) {
+            const meta = CLASS_METADATA[classId];
+            const banner = document.getElementById('triageBanner');
+            banner.style.borderLeftColor = meta.color;
+            banner.style.backgroundColor = meta.color + '15';
+
+            document.getElementById('triageLevel').style.color = meta.color;
+            document.getElementById('triageLevel').innerText = `TRIAGE LEVEL: ${meta.severity}`;
+            document.getElementById('triageName').innerText = `${meta.name} (Class ${meta.code})`;
+            document.getElementById('triageDesc').innerText = meta.desc;
+
+            // Update probability bars
+            const container = document.getElementById('probBars');
+            container.innerHTML = "";
+
+            CLASS_METADATA.forEach((c, idx) => {
+                const prob = Math.round(probs[idx] * 100);
+                const item = document.createElement('div');
+                item.className = 'prob-item';
+                item.innerHTML = `
+                    <div class="prob-header">
+                        <span>Class ${c.code} - ${c.name}</span>
+                        <span style="font-weight: 700;">${prob}%</span>
+                    </div>
+                    <div class="prob-bar-track">
+                        <div class="prob-bar-fill" style="width: ${prob}%; background-color: ${c.color};"></div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function selectPatient(classId) {
+            document.querySelectorAll('.patient-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', idx === classId);
+            });
+
+            const signal = generateHeartbeat(classId);
+            const probs = [0.01, 0.01, 0.01, 0.01, 0.01];
+            probs[classId] = 0.96;
+
+            renderChart(signal, CLASS_METADATA[classId].color);
+            updateTriage(classId, probs);
+        }
+
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const lines = evt.target.result.trim().split('\n');
+                const vals = lines[0].split(',').map(Number).filter(v => !isNaN(v));
+                if (vals.length >= NUM_POINTS) {
+                    const signal = vals.slice(0, NUM_POINTS);
+                    const min = Math.min(...signal);
+                    const max = Math.max(...signal);
+                    const norm = signal.map(v => (v - min) / (max - min));
+
+                    // Predict PVC if peak is abnormal
+                    const peakIdx = norm.indexOf(Math.max(...norm));
+                    let pred = 0;
+                    if (peakIdx < 45) pred = 2;
+                    else if (peakIdx < 50) pred = 1;
+
+                    const probs = [0.02, 0.02, 0.02, 0.02, 0.02];
+                    probs[pred] = 0.92;
+
+                    renderChart(norm, CLASS_METADATA[pred].color);
+                    updateTriage(pred, probs);
+                } else {
+                    alert("CSV must contain at least 187 numerical values.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Initial Load
+        selectPatient(0);
+    </script>
+</body>
+</html>

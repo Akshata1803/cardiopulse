@@ -1,0 +1,16 @@
+# Core Data Science & Math
+numpy>=1.23.5
+pandas>=1.5.3
+scipy>=1.10.1
+
+# Visualization
+matplotlib>=3.7.1
+seaborn>=0.12.2
+plotly>=5.14.1
+
+# Machine Learning & Deep Learning
+scikit-learn>=1.2.2
+tensorflow>=2.12.0
+
+# Web Application UI
+streamlit>=1.28.0
