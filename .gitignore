@@ -18,3 +18,8 @@ __pycache__/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Large Benchmark Datasets (>100MB, exceeded GitHub push limit)
+# Run `python src/download_dataset.py` to fetch them automatically
+data/mitbih_train.csv
+data/mitbih_test.csv

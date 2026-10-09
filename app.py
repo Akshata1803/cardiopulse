@@ -6,6 +6,7 @@ Interactive ECG Arrhythmia Classification & Cardiac Triage Dashboard.
 import os
 import csv
 import numpy as np
+import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 
@@ -168,11 +169,10 @@ input_mode = st.sidebar.radio(
 )
 
 signal = None
-import generate_samples
 
 if input_mode == "Preset Patient Samples":
     preset_choice = st.sidebar.selectbox(
-        "Choose Clinical Case:",
+        "Choose Clinical Case (Real MIT-BIH Test Data):",
         [
             "Patient #101: Normal Sinus Rhythm (Class N)",
             "Patient #204: Supraventricular Ectopic (Class S)",
@@ -188,7 +188,19 @@ if input_mode == "Preset Patient Samples":
             target_class = v
             break
             
-    signal = generate_samples.generate_ecg_beat(target_class, noise_level=0.012)
+    # Load real test beat from sample_test_beats.csv
+    sample_file = os.path.join(os.path.dirname(__file__), "data", "sample_test_beats.csv")
+    if os.path.exists(sample_file):
+        try:
+            samples_df = pd.read_csv(sample_file, header=None)
+            matching = samples_df[samples_df.iloc[:, -1] == target_class]
+            if len(matching) > 0:
+                signal = matching.iloc[0, :-1].values.astype(float)
+        except Exception:
+            pass
+    if signal is None:
+        import generate_samples
+        signal = generate_samples.generate_ecg_beat(target_class, noise_level=0.012)
 
 elif input_mode == "Upload Custom ECG (.csv)":
     uploaded_file = st.sidebar.file_uploader("Upload single-beat CSV (187 values)", type=["csv"])
@@ -214,6 +226,7 @@ elif input_mode == "Simulated Patient Telemetry":
     )
     sim_noise = st.sidebar.slider("Sensor Noise Level:", 0.0, 0.08, 0.02, 0.01)
     target_class = int(sim_class.split(":")[0].replace("Class ", ""))
+    import generate_samples
     signal = generate_samples.generate_ecg_beat(target_class, noise_level=sim_noise)
 
 # Model Prediction & Visualization
@@ -314,6 +327,13 @@ if signal is not None:
             plot_bgcolor="white"
         )
         st.plotly_chart(fig_prob, use_container_width=True)
+
+        # Explicit per-class predicted probabilities
+        st.markdown("###### Exact Class Probabilities:")
+        p_cols = st.columns(5)
+        for i, p_col in enumerate(p_cols):
+            with p_col:
+                p_col.metric(f"**{CLASS_DETAILS[i]['code']}**", f"{probabilities[i]*100:.2f}%")
 
     # Educational Footer
     st.markdown("---")
